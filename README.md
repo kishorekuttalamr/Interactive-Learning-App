@@ -56,46 +56,6 @@ Our development process follows **Scrum principles**, organized around the follo
 4. 📊 **Progress Tracking and Goals**
 5. 🔑 **User Account Management**
 
-Check out the detailed epics and tasks in our [documentation](./epics.docx).
-
----
-
-## 💻 **Tech Stack**
-- **Frontend**: 🌐 React Native / Flutter
-- **Backend**: 🛠️ Node.js with Express
-- **Database**: 🔗 Firebase / PostgreSQL
-- **Tools**: ⚙️ GitHub Actions, Trello, Figma
-
----
-
-## 🏢 **How to Contribute**
-We ❤️ contributions! Follow these steps to get started:
-1. 🍶 Fork the repository.
-2. 🌟 Create a feature branch: `git checkout -b feature-name`.
-3. 💠 Commit your changes: `git commit -m "Add awesome feature"`.
-4. 📢 Push to the branch: `git push origin feature-name`.
-5. 🔄 Open a pull request!
-
----
-
-## 🚀 **Getting Started**
-### Prerequisites
-- Install [Node.js](https://nodejs.org/).
-- Install [React Native CLI](https://reactnative.dev/).
-
-### Setup
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/interactive-learning-app.git
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the app:
-   ```bash
-   npm start
-   ```
 
 ---
 
@@ -112,9 +72,5 @@ A big thank you to:
 
 ---
 
-## 📝 **License**
-This project is licensed under the [MIT License](LICENSE).
-
----
 
 🎉 **Let’s make learning fun and effective together!** 🚀
