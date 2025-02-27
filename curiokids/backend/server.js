@@ -45,7 +45,7 @@ app.post("/send-otp", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Your OTP Code",
-      text: `Your OTP is: ${otp}`,
+      text:`Your OTP is: ${otp}`,
     });
 
     res.json({ message: "OTP sent successfully" });
