@@ -3,6 +3,7 @@ import LoginPage from "./loginPage";
 import RegisterPage from "./Register";
 import SelctSubjects from "./selectSubjects"; // Ensure you have a RegisterPage component
 import VerifyOTP from "./verifyOtp";
+import SaveUser from "./saveUser";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/selectSubjects" element={<SelctSubjects />} />
         <Route path="/verifyOTP" element={<VerifyOTP />} />
+        <Route path="/saveUser" element={<SaveUser />} />
       </Routes>
     </Router>
   );

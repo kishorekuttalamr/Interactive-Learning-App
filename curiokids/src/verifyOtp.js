@@ -4,34 +4,36 @@ import { useNavigate, useLocation } from "react-router-dom";
 export default function VerifyOtpPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const formData = location.state?.formData || null; // Get form data
   const email = location.state?.email || "";  // Get email from navigation state
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
 
   const handleVerifyOtp = async () => {
-    console.log("handleVerifyOtp called"); // Debugging log
-
     if (!otp) {
       setError("Please enter the OTP.");
       return;
     }
-
+  
+    // Bypass verification for specific email
+    if (formData.parentEmail === "arjun@shivakumar.in" && otp === "123456") {
+      alert("OTP Verified! Registration Successful.");
+      navigate("/selectSubjects", { state: { formData } });
+      return;
+    }
+  
     try {
-      console.log("Sending OTP verification request to backend...");
       const response = await fetch("http://localhost:5000/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),  // Sending both email & OTP
+        body: JSON.stringify({ email: formData.parentEmail, otp }),
       });
-
-      console.log("Response received:", response);
-
+  
       const data = await response.json();
-      console.log("Response data:", data);
-
+  
       if (response.ok) {
         alert("OTP Verified! Registration Successful.");
-        navigate("/selectSubjects");
+        navigate("/selectSubjects", { state: { formData } });
       } else {
         setError(data.error || "Invalid OTP. Please try again.");
       }
@@ -40,6 +42,7 @@ export default function VerifyOtpPage() {
       setError("Failed to verify OTP. Check your internet connection.");
     }
   };
+  
 
   return (
     <div className="relative flex flex-col items-center justify-center h-screen">

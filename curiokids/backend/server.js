@@ -6,6 +6,8 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+
 
 const app = express();
     app.use(cors());
@@ -16,7 +18,7 @@ const app = express();
 // }));
 app.use(bodyParser.json());
 
-const otpStore = {}; 
+const otpStore = {"arjun@shivakumar.in":123456}; 
 
 // Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -25,6 +27,37 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+});
+
+mongoose.connect("mongodb://localhost:27017/yourDatabase", { 
+  useNewUrlParser: true, 
+  useUnifiedTopology: true 
+});
+
+const userSchema = new mongoose.Schema({
+  parentName: String,
+  parentUsername: String,
+  parentPassword: String,
+  parentEmail: String,
+  childName: String,
+  childUsername: String,
+  childPassword: String,
+  childEmail: String,
+  childDob: String,
+  preferredSubjects: [String], // Array of subjects
+});
+
+const User = mongoose.model("User", userSchema);
+
+// Route to store user data
+app.post("/register-user", async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json({ message: "User registered successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to register user." });
+  }
 });
 
 // Generate a 6-digit OTP
