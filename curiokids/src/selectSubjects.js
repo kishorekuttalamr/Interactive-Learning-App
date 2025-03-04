@@ -1,4 +1,5 @@
 import { useState } from "react";
+<<<<<<< Updated upstream
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function SubjectSelectionPage() {
@@ -7,6 +8,12 @@ export default function SubjectSelectionPage() {
   const formData = location.state?.formData || {};
   // console.log(formData);
 
+=======
+import { useNavigate } from "react-router-dom";
+
+export default function SubjectSelectionPage() {
+  const navigate = useNavigate();
+>>>>>>> Stashed changes
   const subjects = [
     "Math", "Science", "English", "History", "Geography",
     "Computer Science", "Art", "Music", "Physics", "Biology"
@@ -59,6 +66,14 @@ export default function SubjectSelectionPage() {
           Continue
         </button>
       </div>
+
+      {/* Try Sample Quiz Button */}
+      <button 
+        onClick={() => navigate('/quiz')} 
+        className="absolute bottom-5 right-5 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600"
+      >
+        Try Sample Quiz
+      </button>
     </div>
   );
 }
