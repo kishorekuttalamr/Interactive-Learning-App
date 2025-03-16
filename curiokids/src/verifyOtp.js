@@ -1,39 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function VerifyOtpPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const formData = location.state?.formData || null; // Get form data
-  const email = location.state?.email || "";  // Get email from navigation state
+  const formData = location.state?.formData || null;
+  const email = location.state?.email || formData?.parentEmail || "";  
+
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
+
+  const otpSent = useRef(false); // Prevent multiple OTP requests
+
+  useEffect(() => {
+    const sendOtp = async () => {
+      if (otpSent.current || !email) return; // Prevent multiple OTP requests
+      otpSent.current = true; // Mark OTP as sent before making request
+  
+      console.log("Sending OTP to:", email);
+      try {
+        await fetch("http://localhost:5000/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+      } catch (err) {
+        console.error("Error sending OTP:", err);
+        setError("Failed to send OTP. Please try again later.");
+        otpSent.current = false; // Allow retry on error
+      }
+    };
+  
+    sendOtp();
+  }, [email]);
+  
 
   const handleVerifyOtp = async () => {
     if (!otp) {
       setError("Please enter the OTP.");
       return;
     }
-  
-    // Bypass verification for specific email
-    if (formData.parentEmail === "arjun@shivakumar.in" && otp === "123456") {
-      alert("OTP Verified! Registration Successful.");
-      navigate("/selectSubjects", { state: { formData } });
-      return;
-    }
-  
+
     try {
       const response = await fetch("http://localhost:5000/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.parentEmail, otp }),
+        body: JSON.stringify({ email, otp }),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         alert("OTP Verified! Registration Successful.");
-        navigate("/selectSubjects", { state: { formData } });
+        navigate("/selectSubjects", { state: { formData } }); 
       } else {
         setError(data.error || "Invalid OTP. Please try again.");
       }
@@ -42,7 +61,6 @@ export default function VerifyOtpPage() {
       setError("Failed to verify OTP. Check your internet connection.");
     }
   };
-  
 
   return (
     <div className="relative flex flex-col items-center justify-center h-screen">

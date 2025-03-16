@@ -1,49 +1,52 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function SaveUser() {
     const navigate = useNavigate();
     const location = useLocation();
+    const userData = location.state;
 
-    // Retrieve passed user data or use default values
-    const userData = location.state || {
-        name: "Test User",
-        email: "testuser@example.com",
-        selectedSubjects: ["Math", "Science", "History"]
-    };
-
-    console.log("saveuser");
-    console.log("User Data:", userData);
-
-    const [isRegistered, setIsRegistered] = useState(false);
+    const [message, setMessage] = useState("Saving User Data...");
+    const isSubmitting = useRef(false); // Prevent duplicate API calls
 
     useEffect(() => {
-        
-        if (userData) {
-            console.log("🔄 useEffect triggered! userData:", userData);
-
+        if (userData && !isSubmitting.current) {
+            console.log("🔄 useEffect triggered!");
             saveUserToBackend();
-
         }
-    }, [userData]); // Trigger effect only when `userData` changes
+    }, [userData]); // Only runs when `userData` changes
 
     const saveUserToBackend = async () => {
+        if (isSubmitting.current) return; // Prevent duplicate calls
+        isSubmitting.current = true;
+
         try {
-            const response = await fetch("http://localhost:5001/saveUserbackend", {
+            console.log(userData);
+            const response = await fetch("http://localhost:5001/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(userData), // Send `userData` directly
+                body: JSON.stringify(userData),
             });
+
             const data = await response.json();
             if (response.ok) {
                 console.log("✅ User saved:", data);
-                setIsRegistered(true);
-                setTimeout(() => navigate("/dashboard"), 3000); // Redirect after 3 sec
+                setMessage("User Registered Successfully! ✅");
+                setTimeout(() => navigate("/dashboard"), 3000);
             } else {
                 console.error("❌ Error saving user:", data.error);
+                if (data.error === "Username or email already exists") {
+                    setMessage("User already exists. Redirecting to registration... ⏳");
+                    setTimeout(() => navigate("/register"), 3000);
+                } else {
+                    setMessage("Error saving user. Please try again.");
+                }
             }
         } catch (error) {
             console.error("❌ Request failed:", error);
+            setMessage("Server error. Please try again.");
+        } finally {
+            isSubmitting.current = false; // Reset flag after completion
         }
     };
 
@@ -56,11 +59,7 @@ export default function SaveUser() {
 
             <div className="relative p-10 w-[500px] rounded-lg shadow-xl 
                            backdrop-blur-xl border border-white/40 bg-white/10 mt-16">
-                {isRegistered ? (
-                    <h2 className="text-4xl font-poppins text-center text-white">User Registered Successfully! ✅</h2>
-                ) : (
-                    <h2 className="text-4xl font-poppins text-center text-white">Saving User Data...</h2>
-                )}
+                <h2 className="text-4xl font-poppins text-center text-white">{message}</h2>
             </div>
         </div>
     );
