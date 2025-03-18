@@ -16,14 +16,17 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
+        credentials:"include"
       });
   
       const data = await response.json();
   
       if (response.ok) {
-        localStorage.setItem("accessToken", data.token);
-        localStorage.setItem("username", data.username);
-        localStorage.setItem("name", data.name);
+        
+        document.cookie = `username=${data.username}; path=/; secure`;
+        document.cookie = `usertype=${data.userType}; path=/; secure`;  
+        document.cookie = `name=${data.name}; path=/; secure`;
+        
         console.log(data.token)
         alert("Login successful!");
         navigate("/dashboard");

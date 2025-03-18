@@ -7,9 +7,19 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+// const User = require("./models/User"); // Adjust based on your project structure
+
+
 
 const app = express();
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3001", // Use frontend's URL instead of '*'
+  credentials: true, // Allow cookies and authentication headers
+}));
+
+app.use(cookieParser()); // Enable cookie parsing
 app.use(bodyParser.json());
 
 process.env.EMAIL_USER = "curiokidslearning@gmail.com";
@@ -37,20 +47,21 @@ mongoose.connect("mongodb://localhost:27017/curiokids", {
 const userSchema = new mongoose.Schema({
   parentName: String,
   parentUsername: String,
-  parentPassword: String, // Hashed password
+  parentPassword: String,
   parentEmail: String,
   childName: String,
   childUsername: String,
-  childPassword: String, // Hashed password
+  childPassword: String,
   childEmail: String,
   childDob: String,
-  preferredSubjects: [String], // Array of subjects
-  refreshToken: String
+  resetToken: { type: String, default: null }, // For password reset
+  selectedSubjects: { type: [String], required: true }, // ✅ Ensuring subjects is stored as an array of strings
+  refreshToken: { type: String, default: null },
 });
 
 
 
-// Hash password before saving
+// Hash password before saving  
 userSchema.pre("save", async function (next) {
   if (this.isModified("childPassword")) {
     const salt = await bcrypt.genSalt(10);
@@ -65,19 +76,21 @@ userSchema.pre("save", async function (next) {
 
 const User = mongoose.model("User", userSchema);
 
-const generateAccessToken = (user)=>
-  jwt.sign(
+const generateAccessToken = (user)=>{
+  // console.log("new access token");
+  return jwt.sign(
     { id: user._id, parentEmail: user.parentEmail, childEmail: user.childEmail}, // Payload (user data)
     SECRET_KEY, // Secret key
-    { expiresIn: "1h" } 
+    { expiresIn: "15m"} 
   );
+}
 
-  const generateRefreshToken = (user) =>
-    jwt.sign(
-      { id: user._id, parentEmail: user.parentEmail, childEmail: user.childEmail}, // Payload (user data)
-      REFRESH_SECRET_KEY,
-      { expiresIn: "7d" } // Longer lifespan (7 days)
-    );
+const generateRefreshToken = (user) =>
+  jwt.sign(
+    { id: user._id, parentEmail: user.parentEmail, childEmail: user.childEmail}, // Payload (user data)
+    REFRESH_SECRET_KEY,
+    { expiresIn: "2d" } // Longer lifespan (7 days)
+  );
 
 
 // **User Registration**
@@ -121,8 +134,22 @@ app.post("/login", async (req, res) => {
     }
 
     // Generate JWT token
-    const token = generateAccessToken(user);
+    const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
+    res.cookie("access_token", accessToken, {
+      httpOnly: true,
+      // secure: process.env.NODE_ENV === "production", // Only use secure in production (HTTPS)
+      sameSite: "Lax",
+      // maxAge: 10 * 1000, // 15 minutes
+    });
+
+    res.cookie("refresh_token", refreshToken, {
+      httpOnly: true,
+      // secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      // maxAge: 340 * 1000, // 7 days
+    });
+
 
     if (userType === "parent"){
       await User.updateOne(
@@ -130,12 +157,17 @@ app.post("/login", async (req, res) => {
         {$set:{refreshToken : refreshToken}}
       )
     }
+    else{
+      await User.updateOne(
+        {childUsername:username},
+        {$set:{refreshToken : refreshToken}}
+      )
+    }
 
     res.json({
       message: "Login successful",
-      token,
-      refreshToken,
       userType,
+      username,
       name: userType === "parent" ? user.parentName : user.childName
     });
   } catch (error) {
@@ -144,8 +176,9 @@ app.post("/login", async (req, res) => {
 });
 
 app.post("/refresh-token", async (req, res) => {
-  const {refreshToken} = req.body;
+  const refreshToken = req.cookies.refresh_token;
   if (!refreshToken){
+    // console.log("missing refresh token");
     return res.status(403).json({ message: "Refresh token required" });
   }
 
@@ -153,20 +186,49 @@ app.post("/refresh-token", async (req, res) => {
     const user = await User.findOne({refreshToken: refreshToken});
     const storedToken = user.refreshToken;
     if (!storedToken){
+      // console.log("No refresh token in db");
       return res.status(403).json({message: "Refresh Token does not exist"});
     }
 
     jwt.verify(refreshToken, REFRESH_SECRET_KEY, (err, decoded)=>{
-      if (err) return res.status(403).json({message:"Invalid token"});
+      if (err) {
+        // console.log("Invalid token");
+        return res.status(403).json({message:"Invalid token"});
+      }
       const accesstoken = generateAccessToken(user);
+      res.cookie("access_token", accesstoken, {
+        httpOnly: true,
+        // secure: process.env.NODE_ENV === "production", // Only use secure in production (HTTPS)
+        sameSite: "Lax",
+        // maxAge: 10 * 1000, // 15 minutes
+      });
       res.json(
-        {accesToken: accesstoken}
+        {accessToken: accesstoken}
       )
     })
   }catch(error){
     res.status(500).json({ message: `Server error: ${error}` });
   }
 });
+
+// const router = express.Router();
+app.post("/verify-token", (req, res) => {
+  const token = req.cookies.access_token; // Read from HTTP-only cookie
+  const name = req.cookies.name;
+  // console.log("Name: "+name+" token: "+token);
+  if (!token) {
+    // console.log("No token");
+    return res.status(401).json({ message: "Unauthorized: No token provided" });
+  }
+
+  jwt.verify(token, SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+    res.status(200).json({ message: "Token is valid", user: decoded });
+  });
+});
+
 
 // **Generate OTP**
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -246,6 +308,64 @@ app.post("/send-reset-link", async (req, res) => {
 });
 
 
+//Fetch details of user
+app.get("/fetch-details", async (req, res) => {
+  const { username, usertype } = req.query; 
+  if (!username) return res.status(400).json({ error: "Username is required" });
+  try {
+    let user;  // Define user before the if-else block
+
+    if (usertype === "parent") {
+      user = await User.findOne({ parentUsername: username }).select(
+        "-preferredSubjects -parentPassword -childPassword -resetToken -refreshToken -__v"
+      );
+    } else {
+      user = await User.findOne({ childUsername: username }).select(
+        "-preferredSubjects -parentPassword -childPassword -resetToken -refreshToken -__v"
+      );
+    }
+
+    res.json(user);
+  } catch (error) {
+    return res.status(500).json({ error: "Server error", details: error.message });
+  }
+});
+
+
+//Update details of user
+app.put("/update-user", async (req, res) => {
+  console.log(typeof(req.body.selectedSubjects));
+  const { _id, ...updateData } = req.body; // Extract _id separately
+  if (!_id) {
+    return res.status(400).json({ error: "User ID (_id) is required" });
+  }
+
+  // // Convert selectedSubjects to an array if it's a string
+  // if (selectedSubjects && typeof selectedSubjects === "string") {
+  //   console.log("here");
+  //   updateData.selectedSubjects = selectedSubjects.split(",").map((subject) => subject.trim());
+  // }
+  // console.log(updateData);
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      { $set: updateData },
+      { new: true, select: "-parentPassword -childPassword -resetToken -refreshToken -__v" } // Exclude sensitive fields
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "User updated successfully", user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ error: "Error updating user", details: error.message });
+  }
+});
+
+
+
 // **Reset Password**
 app.post("/reset-password", async (req, res) => {
   const { email, token, newPassword } = req.body;
@@ -266,6 +386,22 @@ app.post("/reset-password", async (req, res) => {
     res.json({ message: "Password successfully reset!" });
   } catch (error) {
     res.status(500).json({ error: "Error resetting password" });
+  }
+});
+
+app.get('/search-users', async (req, res) => {
+  try {
+    const query = req.query.query;
+    if (!query) return res.json([]);
+
+    const users = await User.find({ 
+      username: { $regex: query, $options: 'i' } // Case-insensitive search
+    }).limit(10);
+
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

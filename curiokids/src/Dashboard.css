@@ -162,7 +162,9 @@ body.dark-mode {
 }
 
 /* Calendar Section */
-.calendar {
+/* .calendar {
+  display: flex;
+  flex-direction: column;
   background: white;
   padding: 20px;
   border-radius: 10px;
@@ -179,6 +181,7 @@ body.dark-mode {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(30, 1fr);
   gap: 5px;
 }
 
@@ -203,6 +206,12 @@ body.dark-mode {
 
 .calendar-date:hover {
   background: #d0e1f9;
+} */
+
+.calendar-date:hover {
+  background-color: rgba(0, 123, 255, 0.2);
+  transform: scale(1.05);
+  cursor: pointer;
 }
 
 .task {

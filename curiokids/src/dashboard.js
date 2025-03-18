@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css"; // Import your CSS file
+// import api from "../api/apiClient"; 
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -24,14 +25,22 @@ export default function Dashboard() {
 
   // Mock data for user's selected subjects
   const subjects = ["Mathematics", "Science", "History", "Programming", "Literature"];
-  const [name, setName] = useState("")
+ const [data, setData] = useState([]);
+
   // Update time every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    const storedName = localStorage.getItem("name");
-    if (storedName){
-      setName(storedName)
-    }
+
+    // const fetchData = async () => {
+    //   try {
+    //     const response = await api.get("/dashboard");
+    //     setData(response.data);
+    //   } catch (error) {
+    //     console.error("Error fetching dashboard data", error);
+    //   }
+    // };
+
+    // fetchData();
     return () => clearInterval(timer);
   }, []);
 
@@ -155,6 +164,18 @@ export default function Dashboard() {
     return calendar;
   };
 
+  function getCookie(name) {
+    const cookies = document.cookie.split('; ');
+    for (const cookie of cookies) {
+        const [key, value] = cookie.split('=');
+        if (key === name) {
+            return value;
+        }
+    }
+    return null; // Return null if the cookie is not found
+  }
+
+
   return (
     <div className="dashboard-container">
       {/* Top Bar */}
@@ -163,7 +184,7 @@ export default function Dashboard() {
         <img src="./logo.png" alt="Logo" className="logo" /> {/* If logo is in public folder */}
         {/* <img src={logo} alt="Logo" className="logo" /> */} {/* If logo is in src/assets folder */}
         <div className="user-info">
-          <span>Welcome, {name}</span>
+          <span>Welcome, {getCookie("name")}</span>
           <span>{currentTime.toLocaleString()}</span>
         </div>
         <div className="notifications">
@@ -197,6 +218,10 @@ export default function Dashboard() {
             <span>👤</span>
             {!isSidebarCollapsed && "Personal Details"}
           </li>
+          <li onClick={() => navigate("/find-friends")}>
+            <span>👤</span>
+            {!isSidebarCollapsed && "Find Friends"}
+          </li>
         </ul>
       </div>
 
@@ -228,26 +253,36 @@ export default function Dashboard() {
             <p>"Everything happens spontaneously when you distance yourself from your mind."</p>
           </div>
           <div className="calendar">
-            <h3>Calendar</h3>
-            <div className="calendar-navigation">
-              <button onClick={handlePrevMonth}>⬅</button>
-              <span>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
-              <button onClick={handleNextMonth}>➡</button>
+            <h3 className="text-center mt-5 font-poppins text-2xl">Calendar</h3>
+            <div className="calendar-navigation flex w-full items-center">
+              <div className="text-center font-poppins text-xl flex-1">
+                <button onClick={handlePrevMonth}>⬅</button>
+                {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                <button onClick={handleNextMonth}>➡</button>
+                </div>
             </div>
-            <div className="calendar-grid">
-              <div className="calendar-header">
-                <span>Sun</span>
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
+            <div className="w-full max-w-md mx-auto">
+            <div className="grid grid-cols-7 gap-1 p-4 bg-white shadow-lg rounded-lg">
+              {/* Calendar Header */}
+              <div className="col-span-7 grid grid-cols-7 text-center font-bold text-gray-700">
+                <span className="p-2">Sun</span>
+                <span className="p-2">Mon</span>
+                <span className="p-2">Tue</span>
+                <span className="p-2">Wed</span>
+                <span className="p-2">Thu</span>
+                <span className="p-2">Fri</span>
+                <span className="p-2">Sat</span>
               </div>
-              <div className="calendar-dates">{renderCalendar()}</div>
+
+              {/* Calendar Dates */}
+              <div className="col-span-7 grid grid-cols-7 gap-1 text-center">
+                {renderCalendar()}
+              </div>
             </div>
+          </div>
+
             {selectedDay && (
-              <div className="task-input">
+              <div className="task-input mb-10">
                 <input
                   type="text"
                   placeholder="Add a task"

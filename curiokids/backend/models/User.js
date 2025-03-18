@@ -10,7 +10,9 @@ const UserSchema = new mongoose.Schema({
   childPassword: String,
   childEmail: String,
   childDob: String,
-  selectedSubjects: [String], // Store selected subjects
+  resetToken: { type: String, default: null }, // For password reset
+  selectedSubjects: { type: [String], required: true }, // ✅ Ensuring subjects is stored as an array of strings
+  refreshToken: { type: String, default: null },
 });
 
 module.exports = mongoose.model("User", UserSchema);

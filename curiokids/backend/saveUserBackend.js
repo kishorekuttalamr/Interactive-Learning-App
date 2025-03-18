@@ -31,6 +31,7 @@ const userSchema = new mongoose.Schema({
   childDob: { type: String, required: true },
   resetToken: { type: String, default: null }, // For password reset
   selectedSubjects: { type: [String], required: true }, // ✅ Ensuring subjects is stored as an array of strings
+  refreshToken: { type: String, default: null }, // ✅ Explicitly set refreshToken to null
 });
 
 // ✅ Hash passwords before saving
@@ -72,6 +73,7 @@ app.post("/register", async (req, res) => {
       childEmail,
       childDob,
       selectedSubjects,
+      refreshToken
     } = req.body;
 
     if (
@@ -111,11 +113,12 @@ app.post("/register", async (req, res) => {
       childEmail,
       childDob,
       selectedSubjects,
+      refreshToken: refreshToken || null, // ✅ Explicitly set to null if not provided
     });
 
     try {
       await newUser.save();
-      console.log("✅ User saved successfully!");
+      console.log("✅ User saved successfully!", newUser); // Debugging
       return res.status(201).json({ message: "User registered successfully!" });
     } catch (dbError) {
       console.error("❌ Database save error:", dbError);
