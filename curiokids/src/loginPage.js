@@ -11,12 +11,25 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    
+    // Hardcoded admin login
+    if (username === "admin" && password === "123") {
+      document.cookie = `username=admin; path=/; secure`;
+      document.cookie = `usertype=child; path=/; secure`;
+      document.cookie = `name=Administrator; path=/; secure`;
+      document.cookie = `selectedSubjects=["Math", "English"]; path=/; secure`;
+      document.cookie = `userId=1; path=/; secure`;
+      alert("Admin login successful!");
+      navigate("/dashboard");
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:5000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials:"include"
+        credentials: "include"
       });
   
       const data = await response.json();
