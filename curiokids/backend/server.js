@@ -8,8 +8,10 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
-// const User = require("./models/User"); // Adjust based on your project structure
 
+//Routes
+const friendReqRoutes = require("./sendRequest");
+// const User = require("./models/User"); // Adjust based on your project structure
 
 
 const app = express();
@@ -21,6 +23,7 @@ app.use(cors({
 
 app.use(cookieParser()); // Enable cookie parsing
 app.use(bodyParser.json());
+app.use(friendReqRoutes);
 
 process.env.EMAIL_USER = "curiokidslearning@gmail.com";
 process.env.EMAIL_PASS = "amuy vnvt fpjl dnil";
@@ -168,7 +171,9 @@ app.post("/login", async (req, res) => {
       message: "Login successful",
       userType,
       username,
-      name: userType === "parent" ? user.parentName : user.childName
+      name: userType === "parent" ? user.parentName : user.childName,
+      selectedSubjects: user.selectedSubjects || [],
+      userId: user._id
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -214,7 +219,6 @@ app.post("/refresh-token", async (req, res) => {
 // const router = express.Router();
 app.post("/verify-token", (req, res) => {
   const token = req.cookies.access_token; // Read from HTTP-only cookie
-  const name = req.cookies.name;
   // console.log("Name: "+name+" token: "+token);
   if (!token) {
     // console.log("No token");
@@ -391,12 +395,16 @@ app.post("/reset-password", async (req, res) => {
 
 app.get('/search-users', async (req, res) => {
   try {
-    const query = req.query.query;
+    const { query} = req.query;
     if (!query) return res.json([]);
 
+
     const users = await User.find({ 
-      username: { $regex: query, $options: 'i' } // Case-insensitive search
-    }).limit(10);
+        childUsername: { $regex: query, $options: 'i' } // Case-insensitive search
+      })
+      .select("childUsername parentUsername selectedSubjects")
+      .limit(10);
+
 
     res.json(users);
   } catch (error) {
@@ -404,6 +412,7 @@ app.get('/search-users', async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // **Start Server**
 app.listen(5000, () => console.log("Server running on port 5000"));

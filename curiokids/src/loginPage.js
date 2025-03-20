@@ -22,12 +22,12 @@ export default function LoginPage() {
       const data = await response.json();
   
       if (response.ok) {
-        
+        console.log(data);
         document.cookie = `username=${data.username}; path=/; secure`;
         document.cookie = `usertype=${data.userType}; path=/; secure`;  
         document.cookie = `name=${data.name}; path=/; secure`;
-        
-        console.log(data.token)
+        document.cookie = `selectedSubjects=${data.selectedSubjects}; path=/; secure`;
+        document.cookie = `userId=${data.userId}; path=/; secure`;
         alert("Login successful!");
         navigate("/dashboard");
       } else {
