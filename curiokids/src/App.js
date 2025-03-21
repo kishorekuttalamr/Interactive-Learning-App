@@ -66,7 +66,7 @@ function App() {
         <Route path="/changepassword" element={<Changepwd />} />
 
         {/* Protected Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/quiz" element={<ProtectedRoute element={<QuizApp />} />} />
         <Route path="/analysis" element={<ProtectedRoute element={<Analysis />} />} />
         <Route path="/personal-details" element={<ProtectedRoute element={<PersonalDetails />} />} />

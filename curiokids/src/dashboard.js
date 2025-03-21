@@ -1,325 +1,164 @@
-      import React, { useState, useEffect } from "react";
-      import { useNavigate } from "react-router-dom";
-      import "./Dashboard.css"; // Import your CSS file
-      import { get } from "mongoose";
-      // import api from "../api/apiClient"; 
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Trophy, Bell, LogOut, Home, Book, Users, ShoppingBag, Award, Calendar, Settings, Shield, Library } from "lucide-react";
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
 
-      export default function Dashboard() {
-        const navigate = useNavigate();
-        const [currentTime, setCurrentTime] = useState(new Date());
-        const [selectedSubject, setSelectedSubject] = useState(null);
-        const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-        const [showNotifications, setShowNotifications] = useState(false);
-        const [showResourceModal, setShowResourceModal] = useState(false);
-        const [currentDate, setCurrentDate] = useState(new Date());
-        const [selectedDay, setSelectedDay] = useState(null);
-        const [tasks, setTasks] = useState({});
-        const [newTask, setNewTask] = useState("");
-        const [darkMode, setDarkMode] = useState(false); 
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [hoveredSubject, setHoveredSubject] = useState(null);
+  const [streak, setStreak] = useState(5);
+  const [showCalendar, setShowCalendar] = useState(false);
 
-        // Mock data for mandatory deadlines (from courses)
-        const mandatoryDeadlines = [
-          { date: "2025-04-15", subject: "Mathematics", task: "Assignment 1" },
-          { date: "2025-04-21", subject: "Science", task: "Lab Report" },
-          { date: "2025-04-25", subject: "History", task: "Research Paper" },
-        ];
+  const subjects = [
+    { name: "Math", bg: "bg-red-500" },
+    { name: "Science", bg: "bg-blue-500" },
+    { name: "History", bg: "bg-yellow-500" },
+    { name: "Programming", bg: "bg-green-500" },
+    { name: "Literature", bg: "bg-purple-500" },
+    { name: "Geography", bg: "bg-indigo-500" },
+  ];
 
-        // Mock data for user's selected subjects
-        const subjects = ["Mathematics", "Science", "History", "Programming", "Literature"];
-      const [data, setData] = useState([]);
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-        // Update time every second
-        useEffect(() => {
-          const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+  return (
+    <div className="flex min-h-screen bg-gradient-to-r from-green-300 via-blue-300 to-purple-300 font-nunito">
+      {/* Sidebar Navigation */}
+      <div className="w-1/4 bg-white shadow-md p-6 flex flex-col items-center space-y-6 overflow-y-auto">
+        <img src="/logo.png" alt="Logo" className="w-24 h-24 rounded-full" />
+        <nav className="flex flex-col space-y-4 w-full text-sm">
+          <button className="flex items-center space-x-3 text-green-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <Home size={18} /> <span>Learn</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <Book size={18} /> <span>Subjects</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <Users size={18} /> <span>Leaderboards</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <ShoppingBag size={18} /> <span>Shop</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <Award size={18} /> <span>Achievements</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200" onClick={() => setShowCalendar(!showCalendar)}>
+            <Calendar size={18} /> <span>Calendar</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <Settings size={18} /> <span>Settings</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <Shield size={18} /> <span>Parental Control</span>
+          </button>
+          <button className="flex items-center space-x-3 text-gray-600 font-bold w-full p-2 rounded-lg hover:bg-cyan-200">
+            <Library size={18} /> <span>Resources</span>
+          </button>
+        </nav>
+      </div>
 
-          // const fetchData = async () => {
-          //   try {
-          //     const response = await api.get("/dashboard");
-          //     setData(response.data);
-          //   } catch (error) {
-          //     console.error("Error fetching dashboard data", error);
-          //   }
-          // };
-
-          // fetchData();
-          return () => clearInterval(timer);
-        }, []);
-
-
-        // Toggle Dark Mode
-        const toggleTheme = () => {
-          setDarkMode(!darkMode);
-        };
-
-        // Handle logout
-        const handleLogout = () => {
-          navigate("/login");
-        };
-
-        // Handle subject dropdown click
-        const handleSubjectClick = (subject) => {
-          setSelectedSubject(subject === selectedSubject ? null : subject);
-        };
-
-        // Handle click outside subject cards
-        const handleClickOutside = (event) => {
-          if (!event.target.closest(".subject-card")) {
-            setSelectedSubject(null);
-          }
-        };
-
-        function getCookie(name) {
-          const cookies = document.cookie.split("; ");
-          for (const cookie of cookies) {
-            const [key, value] = cookie.split("=");
-            if (key === name) {
-              return value;
-            }
-          }
-          return null;
-        }
-        // Attach click outside listener
-        useEffect(() => {
-          document.addEventListener("click", handleClickOutside);
-          return () => document.removeEventListener("click", handleClickOutside);
-        }, []);
-
-        // Calendar navigation
-        const handlePrevMonth = () => {
-          setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-        };
-
-        const handleNextMonth = () => {
-          setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-        };
-
-        // Handle date click
-        const handleDateClick = (day) => {
-          setSelectedDay(day);
-        };
-
-        // Handle task addition
-        const handleAddTask = () => {
-          if (newTask.trim() === "") return;
-          const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDay}`;
-          const updatedTasks = { ...tasks, [dateKey]: [...(tasks[dateKey] || []), { text: newTask, completed: false, isMandatory: false }] };
-          setTasks(updatedTasks);
-          setNewTask("");
-        };
-
-        // Handle task completion
-        const handleTaskCompletion = (dateKey, index) => {
-          const updatedTasks = { ...tasks };
-          updatedTasks[dateKey][index].completed = !updatedTasks[dateKey][index].completed;
-          setTasks(updatedTasks);
-        };
-
-        // Get days in month
-        const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-
-        // Get first day of month
-        const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
-
-        // Render calendar
-        const renderCalendar = () => {
-          const year = currentDate.getFullYear();
-          const month = currentDate.getMonth();
-          const days = daysInMonth(year, month);
-          const firstDay = firstDayOfMonth(year, month);
-
-          const calendar = [];
-          for (let i = 0; i < firstDay; i++) {
-            calendar.push(<div key={`empty-${i}`} className="calendar-date empty"></div>);
-          }
-          for (let day = 1; day <= days; day++) {
-            const dateKey = `${year}-${month + 1}-${day}`;
-            const mandatoryTasks = mandatoryDeadlines.filter(
-              (d) => new Date(d.date).getDate() === day
-            );
-            const userTasks = tasks[dateKey] || [];
-
-            calendar.push(
-              <div
-                key={day}
-                className={`calendar-date ${selectedDay === day ? "selected" : ""}`}
-                onClick={() => handleDateClick(day)}
-              >
-                {day}
-                <div className="tasks">
-                  {mandatoryTasks.map((task, index) => (
-                    <div key={`mandatory-${index}`} className="task mandatory">
-                      <span>📅 {task.task}</span>
-                    </div>
-                  ))}
-                  {userTasks.map((task, index) => (
-                    <div
-                      key={`user-${index}`}
-                      className={`task ${task.completed ? "completed" : ""}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTaskCompletion(dateKey, index);
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={task.completed}
-                        onChange={() => handleTaskCompletion(dateKey, index)}
-                      />
-                      <span>{task.text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          }
-          return calendar;
-        };
-
-        function getCookie(name) {
-          const cookies = document.cookie.split('; ');
-          for (const cookie of cookies) {
-              const [key, value] = cookie.split('=');
-              if (key === name) {
-                  return value;
-              }
-          }
-          return null; // Return null if the cookie is not found
-        }
-
-
-        return (
-          <div className="dashboard-container">
-            {/* Top Bar */}
-            <div className="top-bar">
-              {/* Replace "Amirio University" with the logo */}
-              <img src="./logo.png" alt="Logo" className="logo" /> {/* If logo is in public folder */}
-              {/* <img src={logo} alt="Logo" className="logo" /> */} {/* If logo is in src/assets folder */}
-              <div className="user-info">
-                <span>Welcome, {getCookie("name")}</span>
-                <span>{currentTime.toLocaleString()}</span>
-              </div>
-              <div className="notifications">
-                <button onClick={() => setShowNotifications(!showNotifications)}>🔔</button>
-                {showNotifications && (
-                  <div className="notification-dropdown">
-                    <p>No new notifications</p>
-                  </div>
-                )}
-              </div>
-              <button className="logout-btn" onClick={handleLogout}>
-                Logout
-              </button>
+      {/* Main Content */}
+      <div className="flex-1 p-6 flex flex-col items-center overflow-hidden">
+        {/* Header */}
+        <div className="w-full max-w-4xl flex justify-between items-center bg-white shadow-md p-4 rounded-lg">
+          <div className="flex items-center space-x-4">
+            <img src="/logo.png" alt="Profile" className="w-16 h-16 rounded-full" />
+            <div>
+              <p className="text-xl font-bold">Welcome, Alex!</p>
+              <p className="text-md text-gray-500">{currentTime.toLocaleTimeString()}</p>
             </div>
-
-            {/* Sidebar */}
-            <div className={`sidebar ${isSidebarCollapsed ? "collapsed" : ""}`}>
-              <button className="collapse-btn" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}>
-                {isSidebarCollapsed ? "➡" : "⬅"}
-              </button>
-              {/* <div className="profile">
-                <img src="/profile.png" alt="Profile" />
-                {!isSidebarCollapsed && <span>Kishore Kuttalam</span>}
-              </div> */}
-              <ul>
-                <li onClick={() => navigate("/view-scores")}>
-                  <span>📊</span>
-                  {!isSidebarCollapsed && "View Scores"}
-                </li>
-                <li onClick={() => navigate("/personal-details")}>
-                  <span>👤</span>
-                  {!isSidebarCollapsed && "Personal Details"}
-                </li>
-                {getCookie("usertype") === "child" && ( // Show only if usertype is "child"
-                  <li onClick={() => navigate("/find-friends")}>
-                    <span>👥</span>
-                    {!isSidebarCollapsed && "Friends"}
-                  </li>
-                )}
-              </ul>
-            </div>
-
-            {/* Main Area */}
-            <div className="main-area">
-              {getCookie("usertype")==="child"}&&(
-              <h2>Your Subjects</h2>
-              <div className="subject-grid">
-                {subjects.map((subject, index) => (
-                  <div key={index} className="subject-card">
-                    <h3>{subject}</h3>
-                    <button onClick={() => handleSubjectClick(subject)}>
-                      {selectedSubject === subject ? "▲" : "▼"}
-                    </button>
-                    {selectedSubject === subject && (
-                      <div className="dropdown-options">
-                        <button>See Feedback</button>
-                        <button onClick={() => navigate("/quiz")}>Take Quiz</button>
-                        <button onClick={() => setShowResourceModal(true)}>Access Resources</button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-                
-              {/* Calendar and Motivation Section */}
-              <div className="calendar-motivation-section">
-                <div className="motivation">
-                  <h3>Motivational Quote</h3>
-                  <p>"Everything happens spontaneously when you distance yourself from your mind."</p>
-                </div>
-                <div className="calendar">
-                  <h3 className="text-center mt-5 font-poppins text-2xl">Calendar</h3>
-                  <div className="calendar-navigation flex w-full items-center">
-                    <div className="text-center font-poppins text-xl flex-1">
-                      <button onClick={handlePrevMonth}>⬅</button>
-                      {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                      <button onClick={handleNextMonth}>➡</button>
-                      </div>
-                  </div>
-                  <div className="w-full max-w-md mx-auto">
-                  <div className="grid grid-cols-7 gap-1 p-4 bg-white shadow-lg rounded-lg">
-                    {/* Calendar Header */}
-                    <div className="col-span-7 grid grid-cols-7 text-center font-bold text-gray-700">
-                      <span className="p-2">Sun</span>
-                      <span className="p-2">Mon</span>
-                      <span className="p-2">Tue</span>
-                      <span className="p-2">Wed</span>
-                      <span className="p-2">Thu</span>
-                      <span className="p-2">Fri</span>
-                      <span className="p-2">Sat</span>
-                    </div>
-
-                    {/* Calendar Dates */}
-                    <div className="col-span-7 grid grid-cols-7 gap-1 text-center">
-                      {renderCalendar()}
-                    </div>
-                  </div>
-                </div>
-
-                  {selectedDay && (
-                    <div className="task-input mb-10">
-                      <input
-                        type="text"
-                        placeholder="Add a task"
-                        value={newTask}
-                        onChange={(e) => setNewTask(e.target.value)}
-                      />
-                      <button onClick={handleAddTask}>Add</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Resource Modal */}
-            {showResourceModal && (
-              <div className="modal">
-                <div className="modal-content">
-                  <h3>Resources for {selectedSubject}</h3>
-                  <p>Here are the resources for your course.</p>
-                  <button onClick={() => setShowResourceModal(false)}>Close</button>
-                </div>
-              </div>
-            )}
           </div>
-        );
-      }
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center bg-yellow-400 px-3 py-1 rounded-full text-yellow-900 font-bold text-lg">
+              <Trophy size={20} />
+              <span className="ml-2">{streak}</span>
+            </div>
+            <Bell size={24} className="text-gray-600 cursor-pointer" />
+            <LogOut size={24} className="text-red-500 cursor-pointer" onClick={() => navigate("/login")} />
+          </div>
+        </div>
+
+        {/* Calendar */}
+        {showCalendar && (
+          <div className="w-full max-w-2xl bg-white p-4 mt-6 shadow-md rounded-lg">
+            <h2 className="text-lg font-bold mb-3">Upcoming Events</h2>
+            <FullCalendar
+              plugins={[dayGridPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{
+                left: "prev,next",
+                center: "title",
+                right: "",
+              }}
+              height="300px"
+              events={[
+                { title: "Math Test", date: "2024-03-25" },
+                { title: "Science Assignment Due", date: "2024-03-28" },
+                { title: "History Quiz", date: "2024-04-01" },
+              ]}
+            />
+          </div>
+        )}
+
+        {/* Subjects Tree */}
+        <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+          {subjects.map((subject, index) => (
+            <div
+              key={index}
+              className={`shadow-md p-6 rounded-lg flex flex-col items-center cursor-pointer transition ${hoveredSubject === subject.bg ? subject.bg + ' text-white' : 'bg-white text-gray-800'}`}
+              onMouseEnter={() => setHoveredSubject(subject.bg)}
+              onMouseLeave={() => setHoveredSubject(null)}
+            >
+              <p className="text-xl font-bold">{subject.name}</p>
+              <button
+                className="mt-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg"
+                onClick={() => navigate("/quiz")}
+              >
+                Take Quiz
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Updates and Challenges Section */}
+        <div className="w-full max-w-4xl bg-white shadow-md p-6 mt-6 rounded-lg">
+          <h2 className="text-xl font-bold mb-4">Updates and Challenges</h2>
+          <div className="space-y-4">
+            {/* Quest Progress */}
+            <div className="bg-gray-100 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold">Lucy's Secret Mission</h3>
+              <p className="text-sm text-gray-600">Complete 20 quests</p>
+              <div className="w-full bg-gray-300 rounded-full h-2 mt-2">
+                <div className="bg-cyan-500 h-2 rounded-full" style={{ width: "65%" }}></div>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">13 / 20</p>
+            </div>
+
+            {/* Daily Quests */}
+            <div className="bg-gray-100 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold">Daily Quests</h3>
+              <div className="space-y-2 mt-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-600">Earn 20 XP</p>
+                  <p className="text-sm text-gray-600">0 / 20</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-600">Spend 10 minutes learning</p>
+                  <p className="text-sm text-gray-600">0 / 10</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-600">Earn 15 Combo Bonus XP</p>
+                  <p className="text-sm text-gray-600">0 / 15</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
